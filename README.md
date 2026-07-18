@@ -2,18 +2,18 @@
 
 Grab a section of a YouTube video and save it as MP4, MP3, or GIF. Paste a
 link, drag the start/end handles to the part you want, pick a format, and
-download it. Nothing to install on the client side — it runs in the browser
-against a small local backend.
-
-Built on [yt-dlp](https://github.com/yt-dlp/yt-dlp) for fetching and
-[ffmpeg](https://ffmpeg.org/) for cutting and transcoding.
+download it. The frontend runs in the browser; a small local backend does the
+actual fetching and cutting with [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+and [ffmpeg](https://ffmpeg.org/).
 
 ## Features
 
 - Trim any part of a video instead of downloading the whole thing
 - Export to **MP4** (up to 1080p60), **MP3**, or **GIF**
-- Pick the output resolution from whatever the source actually has
-- Live progress while the clip is being built
+- Pick the output resolution from whatever the source actually offers
+- Live progress that reports downloading vs. converting, so long jobs don't
+  look frozen
+- Skips re-encoding when you grab the whole video, so full downloads stay fast
 - Runs entirely on your own machine
 
 ## How it works
@@ -23,20 +23,45 @@ Built on [yt-dlp](https://github.com/yt-dlp/yt-dlp) for fetching and
    trim + format          jobs        download       cut / transcode
 ```
 
-The frontend asks the backend for video info, you choose a range and format,
-and the backend downloads just that section with yt-dlp and hands it to ffmpeg
-to cut and convert. Files are written to a temp folder and cleaned up after an
-hour.
+1. You paste a URL; the backend returns the title, thumbnail, duration, and
+   available resolutions.
+2. You choose a range and format and hit **Create clip**.
+3. The backend starts a background job. If you asked for a section, it downloads
+   just that range and re-encodes at the cut points for a frame-accurate trim.
+   If you asked for the whole video, it skips the re-encode and downloads
+   directly.
+4. The frontend polls the job for progress and, when it's done, hands you a
+   download link.
+
+Finished files live in a temp folder and are cleaned up after an hour.
+
+## Project layout
+
+```
+youtube-clipper/
+├─ server/                FastAPI backend
+│  ├─ main.py             HTTP routes
+│  ├─ clipper.py          yt-dlp + ffmpeg wrapper
+│  ├─ jobs.py             in-memory job tracking + temp cleanup
+│  ├─ requirements.txt
+│  ├─ requirements-dev.txt
+│  └─ tests/
+└─ web/                   Next.js + TypeScript frontend
+   ├─ app/page.tsx        the whole UI flow
+   ├─ components/TrimBar.tsx
+   └─ lib/api.ts          typed backend client
+```
 
 ## Requirements
 
 - Node 18+ and pnpm
 - Python 3.10+
-- ffmpeg on your PATH
+- ffmpeg on your PATH (on Windows the backend also picks up a
+  `winget install Gyan.FFmpeg` install automatically)
 
 ## Setup
 
-Backend:
+**Backend**
 
 ```bash
 cd server
@@ -46,7 +71,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-Frontend:
+**Frontend**
 
 ```bash
 cd web
@@ -54,9 +79,47 @@ pnpm install
 pnpm dev
 ```
 
-Then open http://localhost:3000. The frontend talks to the backend at
-`http://localhost:8000` by default — override it with `NEXT_PUBLIC_API_URL` if
-you run the API somewhere else.
+Open http://localhost:3000.
+
+## Configuration
+
+The frontend talks to `http://localhost:8000` by default. Point it elsewhere
+with an env var (see `web/.env.example`):
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## API
+
+| Method | Path                    | Body / params                                   | Returns |
+|--------|-------------------------|-------------------------------------------------|---------|
+| POST   | `/api/info`             | `{ url }`                                        | title, uploader, duration, thumbnail, resolutions |
+| POST   | `/api/clip`             | `{ url, start, end, format, quality, title, duration }` | `{ job_id }` |
+| GET    | `/api/progress/{id}`    | —                                                | `{ status, progress, downloaded, total, filename, error }` |
+| GET    | `/api/download/{id}`    | —                                                | the finished file |
+
+`status` moves through `queued → downloading → processing → done` (or `error`).
+
+## Tests
+
+```bash
+cd server
+pip install -r requirements-dev.txt
+pytest
+```
+
+The suite covers the filename sanitizer, the trim-vs-whole-video logic, the job
+store, and the API routes (the heavy download step is stubbed, so tests don't
+touch the network).
+
+## Notes
+
+- A long **trim** re-encodes for an accurate cut and can take a little while —
+  that's expected, and the UI shows a "Converting…" state for it.
+- GIFs of long selections get big fast; they're meant for short clips.
+- The in-memory job store is fine for local single-process use. For anything
+  shared you'd want a real queue and storage.
 
 ## Disclaimer
 
