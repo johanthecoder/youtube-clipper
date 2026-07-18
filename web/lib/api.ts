@@ -16,11 +16,14 @@ export interface ClipOptions {
   format: "mp4" | "mp3" | "gif";
   quality: number;
   title?: string;
+  duration?: number;
 }
 
 export interface Progress {
   status: "queued" | "downloading" | "processing" | "done" | "error";
   progress: number;
+  downloaded: number;
+  total: number | null;
   error: string | null;
   filename: string | null;
 }

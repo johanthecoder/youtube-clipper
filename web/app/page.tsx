@@ -15,6 +15,11 @@ import styles from "./page.module.css";
 
 type Format = ClipOptions["format"];
 
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [info, setInfo] = useState<VideoInfo | null>(null);
@@ -67,6 +72,7 @@ export default function Home() {
         format,
         quality,
         title: info.title,
+        duration: info.duration,
       });
       setJobId(job_id);
       if (poller.current) clearInterval(poller.current);
@@ -92,6 +98,19 @@ export default function Home() {
 
   const busy = job !== null && job.status !== "done" && job.status !== "error";
   const percent = Math.round((job?.progress ?? 0) * 100);
+  const hasBar = job?.status === "downloading" && !!job.total;
+  const indeterminate = busy && !hasBar;
+  const statusLabel = !job
+    ? ""
+    : job.status === "downloading"
+      ? job.total
+        ? `Downloading ${percent}%`
+        : `Downloading ${formatSize(job.downloaded)}`
+      : job.status === "processing"
+        ? "Converting… long clips can take a minute"
+        : job.status === "queued"
+          ? "Preparing…"
+          : "";
 
   return (
     <main className={styles.page}>
@@ -161,16 +180,12 @@ export default function Home() {
             <div className={styles.progress}>
               {job.status !== "done" ? (
                 <>
-                  <div className={styles.bar}>
-                    <div className={styles.fill} style={{ width: `${percent}%` }} />
+                  <div className={`${styles.bar} ${indeterminate ? styles.indeterminate : ""}`}>
+                    {hasBar && (
+                      <div className={styles.fill} style={{ width: `${percent}%` }} />
+                    )}
                   </div>
-                  <span className={styles.status}>
-                    {job.status === "downloading"
-                      ? `Downloading ${percent}%`
-                      : job.status === "processing"
-                        ? "Converting…"
-                        : "Starting…"}
-                  </span>
+                  <span className={styles.status}>{statusLabel}</span>
                 </>
               ) : (
                 jobId && (
