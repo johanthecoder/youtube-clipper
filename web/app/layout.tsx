@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "youtube-clipper",
-  description: "Clip and download sections of YouTube videos as MP4, MP3 or GIF.",
+  description: "Clip and download sections of online videos as MP4, MP3 or GIF.",
 };
 
 export default function RootLayout({

@@ -1,13 +1,15 @@
 # youtube-clipper
 
-Grab a section of a YouTube video and save it as MP4, MP3, or GIF. Paste a
-link, drag the start/end handles to the part you want, pick a format, and
-download it. The frontend runs in the browser; a small local backend does the
-actual fetching and cutting with [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-and [ffmpeg](https://ffmpeg.org/).
+Grab a section of a video — from YouTube, Vimeo, and the hundreds of other
+sites [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports — and save it as
+MP4, MP3, or GIF. Paste a link, drag the start/end handles to the part you
+want, pick a format, and download it. The frontend runs in the browser; a
+small backend does the actual fetching and cutting with yt-dlp and
+[ffmpeg](https://ffmpeg.org/).
 
 ## Features
 
+- Works with any [yt-dlp-supported site](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md), not just YouTube
 - Trim any part of a video instead of downloading the whole thing
 - Export to **MP4** (up to 1080p60), **MP3**, or **GIF**
 - Pick the output resolution from whatever the source actually offers

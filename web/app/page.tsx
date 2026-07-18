@@ -123,7 +123,7 @@ export default function Home() {
         <input
           className={styles.input}
           type="text"
-          placeholder="Paste a YouTube link"
+          placeholder="Paste a video link"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && loadVideo()}
@@ -158,7 +158,7 @@ export default function Home() {
               </select>
             </label>
 
-            {format !== "mp3" && (
+            {format !== "mp3" && info.resolutions.length > 0 && (
               <label className={styles.field}>
                 <span>Quality</span>
                 <select value={quality} onChange={(e) => setQuality(Number(e.target.value))}>
