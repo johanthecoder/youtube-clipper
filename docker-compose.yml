@@ -1,0 +1,11 @@
+services:
+  backend:
+    build: ./server
+    ports:
+      - "8000:8000"
+    environment:
+      # comma-separated origins allowed to call the API (your frontend URL)
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      # clips per minute per IP; set 0 to disable
+      CLIP_RATE_LIMIT: ${CLIP_RATE_LIMIT:-10}
+    restart: unless-stopped
