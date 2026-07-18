@@ -62,6 +62,21 @@ api.yourdomain.com {
 
 Point an A record for `api.yourdomain.com` at the VM's IP.
 
+## Backend — option C: Render (Docker)
+
+Render's free instance works, but use the **Docker** runtime (not native
+Python) so ffmpeg is included. Expect it to be slow: free is 0.1 CPU / 512 MB
+and spins down when idle (first request after idle cold-starts).
+
+1. **New → Web Service**, connect the repo.
+2. **Root Directory:** `server`  •  **Language/Runtime:** **Docker** (it uses
+   `server/Dockerfile`). Leave Build and Start commands blank — the Dockerfile
+   handles them. (The native Python runtime has no ffmpeg; don't use it.)
+3. Env vars: `ALLOWED_ORIGINS=https://<your-app>.vercel.app`
+   (optionally `CLIP_RATE_LIMIT`).
+4. Create → Render gives you `https://<app>.onrender.com` (HTTPS, works with
+   the Vercel frontend). The container binds Render's `$PORT` automatically.
+
 ## Frontend — Vercel
 
 1. On Vercel: **Add New Project** → import `johanthecoder/youtube-clipper`.
