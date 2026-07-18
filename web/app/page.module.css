@@ -68,6 +68,43 @@
   font-size: 14px;
 }
 
+.help {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.help p {
+  margin: 0;
+}
+
+.help a {
+  color: var(--accent);
+}
+
+.help ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.help li {
+  margin: 4px 0;
+}
+
+.help code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-all;
+}
+
 .card {
   margin-top: 24px;
   padding: 20px;

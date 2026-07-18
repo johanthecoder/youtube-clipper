@@ -134,6 +134,26 @@ export default function Home() {
       </div>
 
       {error && <p className={styles.error}>{error}</p>}
+      {error && /blocking downloads from the server|not a bot|sign in to confirm/i.test(error) && (
+        <div className={styles.help}>
+          <p>YouTube blocks downloads from servers. You can still grab it yourself:</p>
+          <ul>
+            <li>
+              <a
+                href="https://github.com/johanthecoder/youtube-clipper"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Run this tool on your own machine
+              </a>{" "}
+              — free, and YouTube works from a home connection.
+            </li>
+            <li>
+              Or in a terminal: <code>yt-dlp {url.trim() || "<video url>"}</code>
+            </li>
+          </ul>
+        </div>
+      )}
 
       {info && (
         <section className={styles.card}>
