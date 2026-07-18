@@ -77,12 +77,28 @@ def safe_name(title: str | None, ext: str) -> str:
     return f"{name[:80]}.{ext}"
 
 
+def friendly_error(exc: Exception) -> str:
+    """Turn yt-dlp's raw error text into something worth showing a user."""
+    msg = str(exc)
+    low = msg.lower()
+    if "sign in to confirm" in low or "not a bot" in low:
+        return (
+            "This site is blocking downloads from the server (common with YouTube "
+            "on cloud hosts). Try a link from another site, or run the app locally."
+        )
+    if "private video" in low or "video unavailable" in low:
+        return "That video is unavailable or private."
+    if "unsupported url" in low or "is not a valid url" in low:
+        return "That doesn't look like a supported video link."
+    return msg.replace("ERROR: ", "").strip()[:300]
+
+
 @app.post("/api/info")
 def info(req: InfoRequest):
     try:
         return get_info(req.url)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=friendly_error(exc))
 
 
 @app.post("/api/clip")
@@ -145,7 +161,7 @@ def _run(job_id: str, req: ClipRequest, workdir: str):
             filename=safe_name(req.title, EXT[req.format]),
         )
     except Exception as exc:
-        store.update(job_id, status="error", error=str(exc))
+        store.update(job_id, status="error", error=friendly_error(exc))
 
 
 @app.get("/api/progress/{job_id}")
