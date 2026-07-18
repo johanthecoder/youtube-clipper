@@ -63,7 +63,7 @@ export default function Home() {
   async function createClip() {
     if (!info) return;
     setError(null);
-    setJob({ status: "queued", progress: 0, error: null, filename: null });
+    setJob({ status: "queued", progress: 0, downloaded: 0, total: null, error: null, filename: null });
     try {
       const { job_id } = await startClip({
         url: url.trim(),

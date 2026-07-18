@@ -10,6 +10,7 @@ server/.env
 node_modules/
 .next/
 out/
+.vercel/
 web/.env.local
 web/.env*.local
 
