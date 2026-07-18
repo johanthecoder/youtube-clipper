@@ -13,6 +13,8 @@ class Job:
     id: str
     status: str = "queued"  # queued, downloading, processing, done, error
     progress: float = 0.0
+    downloaded: int = 0
+    total: int | None = None
     file: str | None = None
     filename: str | None = None
     error: str | None = None

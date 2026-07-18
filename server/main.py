@@ -36,6 +36,7 @@ class ClipRequest(BaseModel):
     format: str = "mp4"
     quality: int = 1080
     title: str | None = None
+    duration: float | None = None
 
 
 def safe_name(title: str | None, ext: str) -> str:
@@ -66,17 +67,41 @@ def clip(req: ClipRequest):
 
 
 def _run(job_id: str, req: ClipRequest, workdir: str):
-    def hook(status):
-        if status.get("status") == "downloading":
+    # Show activity immediately, even before yt-dlp reports its first bytes.
+    store.update(job_id, status="downloading")
+
+    def on_progress(status):
+        state = status.get("status")
+        if state == "downloading":
             total = status.get("total_bytes") or status.get("total_bytes_estimate")
-            if total:
-                fraction = status.get("downloaded_bytes", 0) / total
-                store.update(job_id, status="downloading", progress=fraction)
-        elif status.get("status") == "finished":
+            downloaded = status.get("downloaded_bytes", 0)
+            fraction = downloaded / total if total else 0.0
+            store.update(
+                job_id,
+                status="downloading",
+                progress=fraction,
+                downloaded=downloaded,
+                total=total,
+            )
+        elif state == "finished":
+            store.update(job_id, status="processing")
+
+    def on_postprocess(status):
+        if status.get("status") == "started":
             store.update(job_id, status="processing")
 
     try:
-        path = make_clip(req.url, req.start, req.end, req.format, req.quality, workdir, hook)
+        path = make_clip(
+            req.url,
+            req.start,
+            req.end,
+            req.format,
+            req.quality,
+            workdir,
+            duration=req.duration,
+            hook=on_progress,
+            pp_hook=on_postprocess,
+        )
         store.update(
             job_id,
             status="done",
@@ -96,6 +121,8 @@ def progress(job_id: str):
     return {
         "status": job.status,
         "progress": round(job.progress, 3),
+        "downloaded": job.downloaded,
+        "total": job.total,
         "error": job.error,
         "filename": job.filename,
     }

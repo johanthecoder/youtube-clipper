@@ -57,7 +57,7 @@ def get_info(url):
     }
 
 
-def make_clip(url, start, end, fmt, quality, out_dir, hook=None):
+def make_clip(url, start, end, fmt, quality, out_dir, duration=None, hook=None, pp_hook=None):
     os.makedirs(out_dir, exist_ok=True)
     out_base = os.path.join(out_dir, "clip")
     height = min(int(quality or MAX_HEIGHT), MAX_HEIGHT)
@@ -65,11 +65,20 @@ def make_clip(url, start, end, fmt, quality, out_dir, hook=None):
     opts = {
         **_base_opts(),
         "outtmpl": out_base + ".%(ext)s",
-        "download_ranges": download_range_func(None, [(start, end)]),
-        "force_keyframes_at_cuts": True,
     }
+
+    # Only cut when an actual sub-section is asked for. Trimming forces a
+    # re-encode at the cut points (slow); grabbing the whole video doesn't
+    # need it, and the normal downloader reports real progress.
+    whole_video = start <= 1 and duration is not None and end >= duration - 1
+    if not whole_video:
+        opts["download_ranges"] = download_range_func(None, [(start, end)])
+        opts["force_keyframes_at_cuts"] = True
+
     if hook:
         opts["progress_hooks"] = [hook]
+    if pp_hook:
+        opts["postprocessor_hooks"] = [pp_hook]
 
     if fmt == "mp3":
         opts["format"] = "bestaudio/best"
