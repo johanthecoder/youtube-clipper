@@ -4,8 +4,9 @@ import os
 import re
 import tempfile
 import threading
+import time
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -15,14 +16,46 @@ from jobs import store
 
 app = FastAPI(title="youtube-clipper")
 
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 EXT = {"mp4": "mp4", "mp3": "mp3", "gif": "gif"}
+
+# Basic per-IP throttle so a public instance can't be hammered into the ground.
+CLIP_RATE_LIMIT = int(os.getenv("CLIP_RATE_LIMIT", "10"))  # clips/min per IP; 0 disables
+_recent_hits: dict[str, list[float]] = {}
+_hits_lock = threading.Lock()
+
+
+def client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def rate_ok(ip: str) -> bool:
+    if CLIP_RATE_LIMIT <= 0:
+        return True
+    now = time.time()
+    with _hits_lock:
+        hits = [t for t in _recent_hits.get(ip, []) if now - t < 60]
+        if len(hits) >= CLIP_RATE_LIMIT:
+            _recent_hits[ip] = hits
+            return False
+        hits.append(now)
+        _recent_hits[ip] = hits
+        return True
 
 
 class InfoRequest(BaseModel):
@@ -53,11 +86,13 @@ def info(req: InfoRequest):
 
 
 @app.post("/api/clip")
-def clip(req: ClipRequest):
+def clip(req: ClipRequest, request: Request):
     if req.format not in EXT:
         raise HTTPException(status_code=400, detail="format must be mp4, mp3 or gif")
     if req.end <= req.start:
         raise HTTPException(status_code=400, detail="end must be after start")
+    if not rate_ok(client_ip(request)):
+        raise HTTPException(status_code=429, detail="Too many requests, give it a minute")
 
     store.cleanup()
     job = store.create()
