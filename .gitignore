@@ -1,0 +1,19 @@
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+server/.env
+
+# node
+node_modules/
+.next/
+out/
+web/.env.local
+web/.env*.local
+
+# build artifacts / temp clips
+clips/
+*.log
+.DS_Store
+Thumbs.db
