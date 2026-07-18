@@ -33,7 +33,17 @@ if FFMPEG_DIR and FFMPEG_DIR not in os.environ.get("PATH", ""):
 
 
 def _base_opts():
-    opts = {"quiet": True, "no_warnings": True}
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        # Try several of YouTube's client APIs in turn. If one route is refused,
+        # yt-dlp falls through to the next (tv/ios tend to be the most tolerant).
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["default", "tv", "ios", "web_embedded", "android", "mweb"],
+            }
+        },
+    }
     if FFMPEG_DIR:
         opts["ffmpeg_location"] = FFMPEG_DIR
     return opts
