@@ -57,6 +57,13 @@ def get_info(url):
     }
 
 
+def is_whole_video(start, end, duration):
+    """True when the selection covers essentially the whole video (no trim needed)."""
+    if duration is None:
+        return False
+    return start <= 1 and end >= duration - 1
+
+
 def make_clip(url, start, end, fmt, quality, out_dir, duration=None, hook=None, pp_hook=None):
     os.makedirs(out_dir, exist_ok=True)
     out_base = os.path.join(out_dir, "clip")
@@ -70,8 +77,7 @@ def make_clip(url, start, end, fmt, quality, out_dir, duration=None, hook=None, 
     # Only cut when an actual sub-section is asked for. Trimming forces a
     # re-encode at the cut points (slow); grabbing the whole video doesn't
     # need it, and the normal downloader reports real progress.
-    whole_video = start <= 1 and duration is not None and end >= duration - 1
-    if not whole_video:
+    if not is_whole_video(start, end, duration):
         opts["download_ranges"] = download_range_func(None, [(start, end)])
         opts["force_keyframes_at_cuts"] = True
 
